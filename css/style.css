@@ -1,0 +1,54 @@
+#exec-wrapper {
+  margin-bottom: 50px;
+  display: none;
+}
+
+#controls-wrapper {
+  display: inline;
+}
+
+#terminal-wrapper {
+  border: 2px solid #dedede;
+  border-radius: 5px;
+  background: #f5f5f5;
+  text-align: center;
+  padding: 5px;
+  margin-bottom: 10px;
+  width: 100%;
+  height: 422px;
+}
+
+#terminal {
+  height: 408px;
+}
+
+.dropzone {
+  border: 2px dashed #dedede;
+  border-radius: 5px;
+  background: #f5f5f5;
+  text-align: center;
+  min-height:300px;
+}
+
+.dropzone i{
+  margin-top: 40px;
+  font-size: 5rem;
+}
+
+.dropzone .dz-message {
+  color: rgba(0,0,0,.54);
+  font-weight: 500;
+  font-size: initial;
+  text-transform: uppercase;
+}
+
+.dropzone .dz-preview.dz-file-preview .dz-image {
+  background-image: url("../images/papyrusrt-thumb.png");
+  background-repeat: no-repeat;
+  width: 120;
+  height: 120;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+}

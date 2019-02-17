@@ -1,0 +1,178 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Run UML-RT Models</title>
+
+  <link rel="stylesheet" href="css/dropzone.css">
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/xterm.min.css">
+  <link rel="stylesheet" href="css/style.css">
+
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+</head>
+
+<body>
+
+  <div class="container">
+    <div class="row my-4">
+      <div class="col">
+          <h2 class="text-primary">Run UML-RT online!</h2>
+          <div id="alert-box" class="alert alert-danger" style="display: none;" role="alert">
+          </div>
+          <div id="exec-wrapper">
+            <div id="terminal-wrapper">
+              <div id="terminal"></div>
+            </div>
+	    <div id="controls-wrapper">
+	      <button type="button" id="download-btn" class="btn btn-primary">Download</button>
+	      <button type="button" id="build-btn" class="btn btn-info">Build</button>
+	      <button type="button" id="run-btn" class="btn btn-success">Run</button>
+	      <button type="button" id="reset-btn" class="btn btn-danger">Close</button>
+	    </div>
+	  </div>
+          
+          <form action="upload" class="dropzone dz-clickable" id="my-dropzone">
+            <div id="form-msg" class="dz-message d-flex flex-column">
+              <i class="fas fa-cloud-upload-alt"></i>
+              Drag &amp; Drop here or click
+            </div>
+          </form>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-xs-12 col-sm-12 col-md-12 mt-2 mt-sm-2 text-center text-pimary">
+        <p class="h6">&copy All right Reversed.<a class="ml-2" href="https://jahed.ca" target="_blank">Karim Jahed</a></p>
+      </div>
+      </hr>
+    </div>
+  </div>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="js/popper.min.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/xterm.min.js"></script>
+  <script src="js/xterm-attach.min.js"></script>
+  <script src="js/xterm-winptyCompat.min.js"></script>
+  <script src="js/xterm-fit.min.js"></script>
+  <script src="js/dropzone.js"></script>
+
+  <script>
+    Terminal.applyAddon(fit);
+    Terminal.applyAddon(attach); 
+    Terminal.applyAddon(winptyCompat);
+    
+    function attachWorkspace() {
+      var term = new Terminal({
+        theme: {
+          background: '#F8F8F8',
+          foreground: '#303030',
+          cursor: '#303030'
+        }
+      });
+      term.winptyCompatInit();
+    
+      socket = new WebSocket('wss://papyrusrt.jahed.ca/run/attach/'+workspaceID);
+      socket.onclose = function() {
+        reset();
+      };
+
+      $('#exec-wrapper').slideDown('fast', function() {
+	term.open(document.getElementById('terminal'));
+        term.attach(socket, true, true, true);
+	term.fit();
+        term.focus();
+      });
+    }
+  </script>
+  
+  <script>
+    Dropzone.autoDiscover = false;
+
+    function generateCode() {
+        $("#form-msg").html('<i class="fa fa-spinner fa-spin"></i> Generating code');
+        $.ajax({
+	  type: 'GET',
+          url: "generate/"+workspaceID,
+          success: function() {
+	    reset();
+            attachWorkspace();
+          },
+          error: function() {
+            error('Error generating code. Please check your model!');
+          }
+        });
+    } 
+
+    function error(msg) {
+      $('#alert-box').html(msg);
+      $('#alert-box').slideDown('fast');
+      reset(true);
+    }
+
+    function reset(keepError) {
+      $('#exec-wrapper').slideUp('fast', function() {
+          document.getElementById('terminal').innerHTML = "";
+      });
+
+      if(typeof socket !== 'undefined'
+        && socket.readyState === WebSocket.OPEN) {
+        socket.onclose = function () {};
+        socket.send("exit\n");
+      }
+
+      if(!keepError)
+        $('#alert-box').slideUp('fast');
+
+      if(myDropzone.files[0])
+        myDropzone.removeFile(myDropzone.files[0]);
+
+      $("#form-msg").html('<i class="fas fa-cloud-upload-alt"></i>Drag &amp; Drop here or click');
+      $("#my-dropzone").css("pointer-events","auto");
+    }
+
+    $(document).ready(function () {
+      $("#reset-btn").click(function() {
+        reset();
+      });
+ 
+      $("#run-btn").click(function() {
+        if(typeof socket !== 'undefined')
+          socket.send("EXECUTABLE=$(find /home/user/workspace -type f -executable) && $EXECUTABLE\n");
+      });
+
+      $("#build-btn").click(function() {
+        if(typeof socket !== 'undefined')
+          socket.send("cd /home/user/workspace && make\n");
+      });
+
+      $("#download-btn").click(function() {
+	location.href="download/"+workspaceID
+      });
+
+      myDropzone = new Dropzone("#my-dropzone");
+
+      myDropzone.on("addedfile", function(file) {
+        $("#form-msg").html('');
+	$("#my-dropzone").css("pointer-events","none");
+      });
+    
+      myDropzone.on("success", function(file, response) {
+        workspaceID = response;
+
+	setTimeout(function(){
+	  reset();
+	  $("#my-dropzone").css("pointer-events","none");
+          generateCode();
+        }, 2000);
+      });
+
+      myDropzone.on("error", function(file, response) {
+	error('File is not a UML-RT model!');
+      });
+    }); 
+  </script>
+</body>
+</html>
